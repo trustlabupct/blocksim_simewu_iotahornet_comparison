@@ -1,0 +1,43 @@
+FROM iotaledger/hornet:2.0.0-rc.4 AS hornet
+FROM iotaledger/inx-indexer:1.0-rc AS indexer
+FROM iotaledger/inx-faucet:1.0-rc AS faucet
+FROM iotaledger/inx-dashboard:1.0-rc AS dashboard
+FROM iotaledger/inx-mqtt:1.0-rc AS mqtt
+FROM iotaledger/inx-spammer:1.0-rc AS spammer
+FROM iotaledger/inx-coordinator:1.0-rc AS coordinator
+FROM iotaledger/inx-poi:1.0-rc AS poi
+FROM iotaledger/inx-participation:1.0-rc AS participation
+
+FROM debian:11
+
+# hornet-1 API
+EXPOSE 14265/tcp
+
+# hornet-1 dashboard
+EXPOSE 8081/tcp
+
+# hornet-1 INX
+EXPOSE 9029/tcp
+
+# faucet
+EXPOSE 8091/tcp
+
+RUN mkdir /app
+WORKDIR /app
+
+# Prepare supervisor
+RUN apt update && apt install -y supervisor parallel
+RUN mkdir -p /var/log/supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Copy the inx apps dir into HORNET image
+COPY --from=hornet /app /app/hornet-1
+COPY --from=hornet /app /app/hornet-2
+COPY --from=indexer /app /app/indexer
+COPY --from=faucet /app /app/faucet
+COPY --from=dashboard /app /app/dashboard
+COPY --from=mqtt /app /app/mqtt
+COPY --from=spammer /app /app/spammer
+COPY --from=coordinator /app /app/coordinator
+COPY --from=poi /app /app/poi
+COPY --from=participation /app /app/participation
